@@ -74,6 +74,11 @@ def today_year():
     return datetime.today().year
 
 
+def today_date():
+    """Return today's date as YYYY-MM-DD"""
+    return ha.as_gregorian(day.jdn).split()[-1]
+
+
 def get_count_of_days(count, year, from_jdn):
     """Return a list of days of length 'count' after day 'from_jdn'"""
 
@@ -196,6 +201,14 @@ def postulate(day):
     return post
 
 
+def header(post, show_chars):
+    if show_chars:
+        return f"{today_date()} ({len(post)} chars)"
+
+    return today_date()
+    
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="hemerologion", description="Generate Greek calendar bot posts"
@@ -216,10 +229,17 @@ if __name__ == "__main__":
         type=int,
         help="Generate posts for given Julian year (overrides -d)",
     )
+    parser.add_argument(
+        "-c",
+        "--characters",
+        action="store_true",
+        help="Show character count for each post"
+    )
 
     args = parser.parse_args()
 
     for day in get_calendar(args):
-        print(ha.as_gregorian(day.jdn).split()[-1])
-        print("-" * 20)
+        post = postulate(day)
+        print(header(post, args.characters))
+        print(f"-" * 30)
         print(postulate(day))
