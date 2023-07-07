@@ -34,6 +34,7 @@ from datetime import datetime
 import heniautos as ha
 import juliandate as jd
 import re
+from itertools import groupby
 
 
 def get_day_names():
@@ -51,12 +52,7 @@ def get_festivals():
         reader = csv.reader(fests, delimiter="\t", quoting=csv.QUOTE_NONNUMERIC)
 
         # Make a dict. The day numbers are the keys, Greek names the values
-        return dict(
-            [
-                ((r[0], r[1]), (r[2], r[3] if len(r[3].strip()) else None))
-                for r in reader
-            ]
-        )
+        return dict([((r[0], r[1]), tuple(r[2:])) for r in reader])
 
 
 GK_DAY = get_day_names()
@@ -98,6 +94,46 @@ def get_calendar(options):
         return get_count_of_days(options.days, today_year() - 1, today_jdn())
 
     raise KeyError("No Valid Option")
+
+
+def despan(name, span):
+    dates = [int(d[0]) for d in span]
+    return (min(dates), f"{min(dates)}–{max(dates)}: {name[0]} ({name[1]})")
+
+
+def single_day_festivals(day):
+    """Format summaries of single-day festivals"""
+    f = [
+        (int(k[1]), f"{int(k[1])}: {v[2]} ({v[3]})")
+        for k, v in FEST.items()
+        if k[0] == day.month and v[4] == 1
+    ]
+    return tuple(f)
+
+
+def multiple_day_festivals(day):
+    """Format summaries of festivals spanning multiple days"""
+    spans = groupby(
+        [(k[1],) + v[2:4] for k, v in FEST.items() if k[0] == day.month and v[4] > 1],
+        key=lambda x: x[1:],
+    )
+    return tuple([despan(*s) for s in spans])
+
+
+def festival_summary(day):
+    """Summarize festivals occuring in this month"""
+    festivals = sorted(
+        single_day_festivals(day) + multiple_day_festivals(day), key=lambda x: x[0]
+    )
+
+    if len(festivals):
+        return (
+            f"\nFestivals in {day.month_name}:\n"
+            + "\n".join([f[1] for f in festivals])
+            + "\n"
+        )
+
+    return ""
 
 
 def month_summary(day):
@@ -191,7 +227,7 @@ def postulate(day):
     )
 
     if day.day == 1:
-        post += month_summary(day)
+        post += month_summary(day) + festival_summary(day)
 
     if day.doy == 1:
         post += year_summary(ha.by_months(ha.festival_calendar(day.astronomical_year)))
@@ -206,7 +242,6 @@ def header(post, show_chars):
         return f"{today_date()} ({len(post)} chars)"
 
     return today_date()
-    
 
 
 if __name__ == "__main__":
@@ -233,7 +268,7 @@ if __name__ == "__main__":
         "-c",
         "--characters",
         action="store_true",
-        help="Show character count for each post"
+        help="Show character count for each post",
     )
 
     args = parser.parse_args()
