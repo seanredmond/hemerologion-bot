@@ -37,27 +37,29 @@ import re
 from itertools import groupby
 
 
-def get_day_names():
+def load_day_names():
     """Load Greek day names from TSV file"""
     with open("day_names.tsv") as names:
         reader = csv.reader(names, delimiter="\t", quoting=csv.QUOTE_NONNUMERIC)
 
         # Make a dict. The day numbers are the keys, Greek names the values
-        return dict(reader)
+        return dict([r[0:2] for r in reader])
 
 
-def get_festivals():
+def load_festivals():
     """Load festivals from TSV file"""
     with open("festivals.tsv") as fests:
         reader = csv.reader(fests, delimiter="\t", quoting=csv.QUOTE_NONNUMERIC)
 
+        return tuple([tuple(r) for r in reader])
+
         # Make a dict. The day numbers are the keys, Greek names the values
-        return dict([((r[0], r[1]), tuple(r[2:])) for r in reader])
+        return dict([((r[0], r[1], r[4]), tuple(r[2:])) for r in reader])
 
 
-GK_DAY = get_day_names()
+GK_DAY = load_day_names()
 
-FEST = get_festivals()
+FEST = load_festivals()
 
 
 def today_jdn():
@@ -103,18 +105,19 @@ def despan(name, span):
 
 def single_day_festivals(day):
     """Format summaries of single-day festivals"""
-    f = [
-        (int(k[1]), f"{int(k[1])}: {v[2]} ({v[3]})")
-        for k, v in FEST.items()
-        if k[0] == day.month and v[4] == 1
-    ]
-    return tuple(f)
+    return tuple(
+        [
+            (d[1], f"{int(d[1])}: {d[4]} ({d[5]})")
+            for d in FEST
+            if d[0] == day.month and d[-1] == 1
+        ]
+    )
 
 
 def multiple_day_festivals(day):
     """Format summaries of festivals spanning multiple days"""
     spans = groupby(
-        [(k[1],) + v[2:4] for k, v in FEST.items() if k[0] == day.month and v[4] > 1],
+        [(d[1], d[4], d[5]) for d in FEST if d[0] == day.month and d[-1] > 1],
         key=lambda x: x[1:],
     )
     return tuple([despan(*s) for s in spans])
@@ -163,22 +166,20 @@ def year_summary(months):
     return summary
 
 
-def festival(day, f):
+def festivals(day, fests):
     """Return description of festival on given day if needed"""
+    in_month = [f for f in fests if f[0] == day.month and f[1] == day.day]
 
-    fest = f.get((int(day.month), day.day), None)
-
-    if fest is None:
+    if not in_month:
         return ""
 
-    post = "\n" + fest[0] + "\n"
+    post = "\n" + "\n".join([f[2] for f in in_month]) + "\n"
+    links = [f[3] for f in in_month if f[3] is not None]
 
-    if fest[1] is not None:
-        post += "\n" + fest[1] + "\n"
+    if links:
+        return post + "\n" + "\n".join(links) + "\n"
 
-        return post
-
-    return ""
+    return post
 
 
 def doy_count(day):
@@ -232,7 +233,7 @@ def postulate(day):
     if day.doy == 1:
         post += year_summary(ha.by_months(ha.festival_calendar(day.astronomical_year)))
 
-    post += festival(day, FEST)
+    post += festivals(day, FEST)
 
     return post
 
