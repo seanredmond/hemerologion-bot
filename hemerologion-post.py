@@ -2,12 +2,12 @@
 """
 Post hemerologion bot posts
 
-Read posts from TSV file, find posts to be posted today and post them to BlueSky
+Read posts from TSV file, find posts to be posted today and post them to Bluesky
 
 This requires some environment variable to be set:
 
     BLUESKY: Must be set to some true value to enable posting
-    BLUESKY_ID: ID of BlueSky user to post as
+    BLUESKY_ID: ID of Bluesky user to post as
     BLUESKY_PASSWORD: Password for BLUESKY_ID user
 
 Heavily indebted to https://github.com/thisisparker/oldroadside for practical 
@@ -34,6 +34,7 @@ import csv
 from datetime import datetime, timezone
 import os
 import requests
+import sys
 import time
 
 BLUESKY_BASE = "https://bsky.social/xrpc"
@@ -57,8 +58,8 @@ def posts_for_day(date, posts):
 
 
 def do_bluesky(opts):
-    if args.immediate:
-        return args.bluesky and os.environ.get("BLUESKY", False)
+    if opts.test:
+        return opts.bluesky and os.environ.get("BLUESKY", False)
 
     return os.environ.get("BLUESKY", False)
 
@@ -80,7 +81,7 @@ def post_to_bluesky(post):
         did = resp_data["did"]
 
     except requests.exceptions.HTTPError as e:
-        return f"Failed to authenticate to BlueSky. {e}"
+        return f"Failed to authenticate to Bluesky. {e}"
 
     iso_timestamp = datetime.now(timezone.utc).isoformat()
     iso_timestamp = iso_timestamp[:-6] + "Z"
@@ -107,9 +108,9 @@ def post_to_bluesky(post):
         resp.raise_for_status()
 
     except requests.exceptions.HTTPError as e:
-        return f"Failed to post to BlueSky. {e}"
+        return f"Failed to post to Bluesky. {e}"
 
-    return "posted to BlueSky"
+    return "posted to Bluesky"
 
 
 def post_posts(post, opts):
@@ -122,7 +123,13 @@ def post_posts(post, opts):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog="hemerologion", description="Generate Greek calendar bot posts"
+        prog="hemerologion",
+        description="Post Greek calendar bot posts",
+        epilog="""
+Posting to Bluesky and Mastodon requires the BLUESKY and MASTODON environment
+variable, respectively, set to true values (i.e., MASTODON=1). Posting a test 
+message with the --test flag also requires the --bluesky and/or --mastodon flag.
+"""
     )
 
     parser.add_argument("tsv", metavar="FILE", type=str, help="TSV file for posts")
@@ -141,20 +148,24 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-m",
-        "--immediate",
+        "--test",
         action="store_true",
-        help="Post immediately (with --bluesky and/or --mastodon)",
+        help="Post test message (with --bluesky and/or --mastodon)",
     )
 
     parser.add_argument(
         "--bluesky",
         action="store_true",
         default=False,
-        help="Post immediately to BlueSky (with --immediate)",
+        help="Post test message to Bluesky (with --test)",
     )
 
     args = parser.parse_args()
+
+    if args.test:
+        # Post test message and exit
+        print(post_posts("Test", args))
+        sys.exit(0)
 
     posts = posts_for_day(args.for_date, load_posts(args.tsv))
 
