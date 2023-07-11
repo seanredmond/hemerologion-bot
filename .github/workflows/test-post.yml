@@ -19,6 +19,7 @@ jobs:
       # CLIENT_KEY: ${{ secrets.CLIENT_KEY }}
       # CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
       # CLIENT_TOKEN: ${{ secrets.CLIENT_TOKEN }}
+      BLUESKY: ${{ env.BLUESKY }}
       BLUESKY_ID: ${{ secrets.BLUESKY_ID }}
       BLUESKY_PASSWORD: ${{ secrets.BLUESKY_PASSWORD }}
     steps:
