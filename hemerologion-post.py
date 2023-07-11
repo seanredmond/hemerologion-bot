@@ -10,7 +10,7 @@ This requires some environment variable to be set:
     BLUESKY_ID: ID of Bluesky user to post as
     BLUESKY_PASSWORD: Password for BLUESKY_ID user
 
-Heavily indebted to https://github.com/thisisparker/oldroadside for practical 
+Heavily indebted to https://github.com/thisisparker/oldroadside for practical
 understanding of these APIs!
 
 Copyright (C) 2023 Sean Redmond
@@ -127,9 +127,9 @@ if __name__ == "__main__":
         description="Post Greek calendar bot posts",
         epilog="""
 Posting to Bluesky and Mastodon requires the BLUESKY and MASTODON environment
-variable, respectively, set to true values (i.e., MASTODON=1). Posting a test 
+variable, respectively, set to true values (i.e., MASTODON=1). Posting a test
 message with the --test flag also requires the --bluesky and/or --mastodon flag.
-"""
+""",
     )
 
     parser.add_argument("tsv", metavar="FILE", type=str, help="TSV file for posts")

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-"""
-Generate posts from hemerologion bot
+"""Generate posts from hemerologion bot
 
 Usage: python hemerologion.py
 
-Print tab-delimited rows to stdout (redirect to save) for daily posting by hemerologion-bot.
+Print tab-delimited rows to stdout (redirect to save) for daily posting by
+hemerologion-bot.
 
 The columns are:
 
@@ -161,11 +161,15 @@ def month_summary(day):
 
     if day.month_length == 29:
         return (
-            f"This {day.month_name} will have 29 days, which the ancient Greeks called a “hollow month” (κοῖλος μήν) as opposed to a “full month” (πλήρης μήν) of 30.",
+            f"This {day.month_name} will have 29 days, which the ancient "
+            "Greeks called a “hollow month” (κοῖλος μήν) as opposed to a "
+            "“full month” (πλήρης μήν) of 30.",
         )
 
     return (
-        f"This {day.month_name} will have 30 days, which the ancient Greeks called a “full month” (πλήρης μήν) as opposed to a “hollow month” (κοῖλος μήν) of 29.",
+        f"This {day.month_name} will have 30 days, which the ancient Greeks "
+        "called a “full month” (πλήρης μήν) as opposed to a “hollow month” "
+        "(κοῖλος μήν) of 29.",
     )
 
 
@@ -182,9 +186,14 @@ def year_summary(day):
     year_type = "ordinary" if day.year_length < 380 else "intercalary"
     month_count = 12 if day.year_length < 380 else 13
 
+    if month_count != 12:
+        raise ValueError("This does not yet handle intercalary years!!")
+
     # This has to be split into two posts because it is long
 
-    summary1 = f"{year} will be an {year_type} year of {day.year_length} days, ending on {ha.as_julian(months[-1][-1]).split()[-1]}. As an {year_type} year there will be {month_count} months (1/2):\n\n"
+    summary1 = f"{year} will be an {year_type} year of {day.year_length} "
+    "days, ending on {ha.as_julian(months[-1][-1]).split()[-1]}. As an "
+    "{year_type} year there will be {month_count} months (1/2):\n\n"
 
     for month in months[0:6]:
         start = " ".join(ha.as_julian(month[0]).split()[-1].split("-")[1:3])
@@ -339,7 +348,7 @@ if __name__ == "__main__":
         for post in postulate(day):
             if not args.csv:
                 print(header(post, args.characters))
-                print(f"-" * 30)
+                print("-" * 30)
                 print(post)
                 print()
 
