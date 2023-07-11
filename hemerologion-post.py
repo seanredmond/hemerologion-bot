@@ -38,7 +38,7 @@ import sys
 import time
 
 
-class HemerolgionPostError(Exception):
+class HemerologionPostError(Exception):
     pass
 
 
@@ -113,7 +113,7 @@ def post_to_bluesky(post):
         resp.raise_for_status()
 
     except requests.exceptions.HTTPError as e:
-        raise HemerologionPstError("Failed to authenticate to Bluesky {e}")
+        raise HemerologionPostError("Failed to authenticate to Bluesky {e}")
 
     return "posted to Bluesky"
 
