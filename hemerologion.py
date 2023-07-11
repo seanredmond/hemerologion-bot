@@ -4,8 +4,16 @@ Generate posts from hemerologion bot
 
 Usage: python hemerologion.py
 
-This just prints formatted text for posts to stdout for copying-and-pasting
-so it isn't strictly bot (yet)
+Print tab-delimited rows to stdout (redirect to save) for daily posting by hemerologion-bot.
+
+The columns are:
+
+    1: And serial index number
+    2: The date for the post (there may be multiple posts for a day)
+    3: The character count of the post
+    4: The text for the post
+
+Alternately just show what the posts will be (with --no-csv).
 
 By default it generates posts for the next 10 days, starting with the next day.
 The number of days can be changed via the -d parameter.
@@ -35,6 +43,9 @@ import heniautos as ha
 import juliandate as jd
 import re
 from itertools import groupby
+import sys
+
+AMPH = "\U0001F3FA"  # Amphora emoji
 
 
 def load_day_names():
@@ -72,8 +83,8 @@ def today_year():
     return datetime.today().year
 
 
-def today_date():
-    """Return today's date as YYYY-MM-DD"""
+def gregorian_date(day):
+    """Return today's date as YYYY-Mon-DD"""
     return ha.as_gregorian(day.jdn).split()[-1]
 
 
@@ -99,6 +110,7 @@ def get_calendar(options):
 
 
 def despan(name, span):
+    """Turn a list of date into a single x–y span"""
     dates = [int(d[0]) for d in span]
     return (min(dates), f"{min(dates)}–{max(dates)}: {name[0]} ({name[1]})")
 
@@ -125,61 +137,106 @@ def multiple_day_festivals(day):
 
 def festival_summary(day):
     """Summarize festivals occuring in this month"""
+
+    if day.day != 1:
+        return ()
+
     festivals = sorted(
         single_day_festivals(day) + multiple_day_festivals(day), key=lambda x: x[0]
     )
 
     if len(festivals):
         return (
-            f"\nFestivals in {day.month_name}:\n"
-            + "\n".join([f[1] for f in festivals])
-            + "\n"
+            f"Festivals in {day.month_name}:\n\n"
+            + "\n".join([f[1] for f in festivals]),
         )
 
-    return ""
+    return ()
 
 
 def month_summary(day):
     """Format summary of month"""
+    if day.day != 1:
+        return ()
 
     if day.month_length == 29:
-        return f"\nThis month will have 29 days, which the ancient Greeks called a “hollow month” (κοῖλος μήν) as opposed to a “full month” (πλήρης μήν) of 30.\n"
+        return (
+            f"This {day.month_name} will have 29 days, which the ancient Greeks called a “hollow month” (κοῖλος μήν) as opposed to a “full month” (πλήρης μήν) of 30.",
+        )
 
-    return f"\nThis month will have 30 days, which the ancient Greeks called a “full month” (πλήρης μήν) as opposed to a “hollow month” (κοῖλος μήν) of 29.\n"
+    return (
+        f"This {day.month_name} will have 30 days, which the ancient Greeks called a “full month” (πλήρης μήν) as opposed to a “hollow month” (κοῖλος μήν) of 29.",
+    )
 
 
-def year_summary(months):
-    """Format summary of year"""
+def year_summary(day):
+    """Format summary of year."""
+
+    if day.doy != 1:
+        return ()
+
+    months = ha.by_months(ha.festival_calendar(day.astronomical_year))
 
     day = months[0][0]
     year = ha.arkhon_year(day.astronomical_year).split()[-1]
     year_type = "ordinary" if day.year_length < 380 else "intercalary"
     month_count = 12 if day.year_length < 380 else 13
 
-    summary = f"\n{year} will be an {year_type} year of {day.year_length} days, ending on {ha.as_julian(months[-1][-1]).split()[-1]}. As an {year_type} year there will be {month_count} months:\n\n"
+    # This has to be split into two posts because it is long
 
-    for month in months:
+    summary1 = f"{year} will be an {year_type} year of {day.year_length} days, ending on {ha.as_julian(months[-1][-1]).split()[-1]}. As an {year_type} year there will be {month_count} months (1/2):\n\n"
+
+    for month in months[0:6]:
         start = " ".join(ha.as_julian(month[0]).split()[-1].split("-")[1:3])
         end = " ".join(ha.as_julian(month[-1]).split()[-1].split("-")[1:3])
-        summary += f"{month[0].month_name}: {start}–{end}\n"
+        summary1 += f"{month[0].month_name}: {start}–{end}\n"
 
-    return summary
+    summary2 = f"Months in {year} (2/2):\n\n"
+    for month in months[6:]:
+        start = " ".join(ha.as_julian(month[0]).split()[-1].split("-")[1:3])
+        end = " ".join(ha.as_julian(month[-1]).split()[-1].split("-")[1:3])
+        summary2 += f"{month[0].month_name}: {start}–{end}\n"
+
+    return (summary1, summary2)
 
 
-def festivals(day, fests):
+def backwards_count(day):
+    """Check for last day of month. Return -1 if true"""
+
+    # Use -1 for ἕνη καὶ νέα, whether it is the 29th or 30th
+    # We are treating δευτέρα φθίνοντος as the omitted day
+    if day.day == day.month_length:
+        return -1
+
+    if day.day < day.month_length:
+        return day.day
+
+    raise ValueError(
+        f"Day number ({day.day}) is greater than the number of days in the month ({day.month_length})"
+    )
+
+
+def festivals_by_day(day):
+    """Return festivals for a given day"""
+    # Festivals on the last day are recorded as day -1
+    day_day = backwards_count(day)
+    return [f for f in FEST if f[0] == day.month and f[1] == day_day]
+
+
+def festivals(day):
     """Return description of festival on given day if needed"""
-    in_month = [f for f in fests if f[0] == day.month and f[1] == day.day]
+    in_month = festivals_by_day(day)
 
     if not in_month:
-        return ""
+        return ()
 
-    post = "\n" + "\n".join([f[2] for f in in_month]) + "\n"
+    post = f"{AMPH} " + "\n".join([f[2] for f in in_month])
     links = [f[3] for f in in_month if f[3] is not None]
 
     if links:
-        return post + "\n" + "\n".join(links) + "\n"
+        return (post + "\n\n" + "\n".join(links),)
 
-    return post
+    return (post,)
 
 
 def doy_count(day):
@@ -187,7 +244,7 @@ def doy_count(day):
     year = ha.arkhon_year(day.astronomical_year).split()[-1]
 
     if day.doy == 1:
-        return f"day {day.doy} of {day.year_length}. Happy New Year {year}!"
+        return f"day {day.doy} of {day.year_length}. Happy New Year {year}! {AMPH}{AMPH}{AMPH}"
 
     if day.doy == day.year_length:
         return f"the last day of {year}!"
@@ -202,14 +259,10 @@ def to_genitive(month):
 
 def greek_day_name(day):
     """Return formatted name of the day in Greek"""
-    if day.day <= 20:
-        return GK_DAY[day.day]
 
-    # Omit one day from count in hollow months
-    if day.month_length == 29:
-        return GK_DAY[day.day + 1]
+    if day.day == day.month_length:
+        return GK_DAY[30]
 
-    # Don't omit in full months
     return GK_DAY[day.day]
 
 
@@ -223,26 +276,22 @@ def greek_date(day):
 def postulate(day):
     """Craft a post for the given day"""
 
-    post = (
-        f"Today is {day.month_name} {day.day} ({greek_date(day)}), {doy_count(day)}\n"
+    post = f"Today ({gregorian_date(day)}) is {day.month_name} {day.day}, {greek_date(day)}, {doy_count(day)}"
+
+    return (
+        (post,)
+        + year_summary(day)
+        + month_summary(day)
+        + festival_summary(day)
+        + festivals(day)
     )
-
-    if day.day == 1:
-        post += month_summary(day) + festival_summary(day)
-
-    if day.doy == 1:
-        post += year_summary(ha.by_months(ha.festival_calendar(day.astronomical_year)))
-
-    post += festivals(day, FEST)
-
-    return post
 
 
 def header(post, show_chars):
     if show_chars:
-        return f"{today_date()} ({len(post)} chars)"
+        return f"{datetime.today().strftime('%Y-%b-%d')} ({len(post)} chars)"
 
-    return today_date()
+    return datetime.today().strftime("%Y-%b-%d")
 
 
 if __name__ == "__main__":
@@ -272,10 +321,36 @@ if __name__ == "__main__":
         help="Show character count for each post",
     )
 
+    parser.add_argument(
+        "--csv",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Output CSV file",
+    )
+
     args = parser.parse_args()
 
+    if args.csv:
+        writer = csv.writer(sys.stdout, delimiter="\t", quoting=csv.QUOTE_NONNUMERIC)
+
+    count = 1
     for day in get_calendar(args):
-        post = postulate(day)
-        print(header(post, args.characters))
-        print(f"-" * 30)
-        print(postulate(day))
+
+        for post in postulate(day):
+            if not args.csv:
+                print(header(post, args.characters))
+                print(f"-" * 30)
+                print(post)
+                print()
+
+            if args.csv:
+                writer.writerow(
+                    (
+                        count,
+                        ha.as_gregorian(day.jdn).split()[-1],
+                        len(post),
+                        post.replace("\n", "\\n"),
+                    )
+                )
+
+            count += 1
