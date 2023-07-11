@@ -86,7 +86,7 @@ def post_to_bluesky(post):
         did = resp_data["did"]
 
     except requests.exceptions.HTTPError as e:
-        raise HemerologionError(f"Failed to authenticate to Bluesky {e}")
+        raise HemerologionPostError(f"Failed to authenticate to Bluesky {e}")
 
     iso_timestamp = datetime.now(timezone.utc).isoformat()
     iso_timestamp = iso_timestamp[:-6] + "Z"
@@ -113,7 +113,7 @@ def post_to_bluesky(post):
         resp.raise_for_status()
 
     except requests.exceptions.HTTPError as e:
-        raise HemerologionError("Failed to authenticate to Bluesky {e}")
+        raise HemerologionPstError("Failed to authenticate to Bluesky {e}")
 
     return "posted to Bluesky"
 
