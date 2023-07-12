@@ -50,7 +50,7 @@ AMPH = "\U0001F3FA"  # Amphora emoji
 
 def load_day_names():
     """Load Greek day names from TSV file"""
-    with open("day_names.tsv") as names:
+    with open("day_names.tsv", "r") as names:
         reader = csv.reader(names, delimiter="\t", quoting=csv.QUOTE_NONNUMERIC)
 
         # Make a dict. The day numbers are the keys, Greek names the values
@@ -59,7 +59,7 @@ def load_day_names():
 
 def load_festivals():
     """Load festivals from TSV file"""
-    with open("festivals.tsv") as fests:
+    with open("festivals.tsv", "r") as fests:
         reader = csv.reader(fests, delimiter="\t", quoting=csv.QUOTE_NONNUMERIC)
 
         return tuple([tuple(r) for r in reader])
@@ -71,6 +71,14 @@ def load_festivals():
 GK_DAY = load_day_names()
 
 FEST = load_festivals()
+
+
+def get_current_posts(fn):
+    """Load existing posts from TSV file"""
+    with open(fn, "r") as posts:
+        reader = csv.reader(posts, delimiter="\t", quoting=csv.QUOTE_NONNUMERIC)
+
+        return tuple([r for r in reader])
 
 
 def today_jdn():
@@ -297,10 +305,76 @@ def postulate(day):
 
 
 def header(post, show_chars):
+    """Format post header for preview output"""
     if show_chars:
         return f"{datetime.today().strftime('%Y-%b-%d')} ({len(post)} chars)"
 
     return datetime.today().strftime("%Y-%b-%d")
+
+
+def show_post(post, show_char_count):
+    """Format post for preview output"""
+    return "\n".join((header(post, args.characters), "-" * 30, post, ""))
+
+
+def escape(s):
+    """Escape newlines for TSV"""
+    return s.replace("\n", "\\n")
+
+
+def unescape(s):
+    """Reverse escaped newlines"""
+    return s.replace("\\n", "\n")
+
+
+def max_count(posts):
+    """Return the highest serial index in list of posts"""
+    if not posts:
+        return 0
+
+    return int(max([p[0] for p in posts]))
+
+
+def jdn_from_date(date):
+    """Return JDN from formatted date"""
+    return int(
+        jd.from_gregorian(*tuple(datetime.strptime(date, "%Y-%b-%d").timetuple())[:3])
+        + 0.5
+    )
+
+
+def max_date(posts):
+    """Return latest date in list of posts"""
+    if not posts:
+        return 0
+
+    return max([jdn_from_date(p[1]) for p in posts])
+
+
+def output_existing(writer, args):
+    """Load and output existing rows if requested and necessary"""
+    # Load existing post if requested
+    try:
+        current_posts = get_current_posts(args.file) if args.append else ()
+    except TypeError as e:
+        if not args.file:
+            print(
+                "Cannot load exising posts for --append, --file required",
+                file=sys.stderr,
+            )
+            sys.exit(-1)
+
+        raise e
+
+    # Ouput existing posts if there are any
+    for post in current_posts:
+        if not args.csv:
+            print(show_post(unescape(post[3]), args.characters))
+
+        if args.csv:
+            writer.writerow((int(post[0]), post[1], int(post[2]), post[3]))
+
+    return (max_count(current_posts) + 1, max_date(current_posts))
 
 
 if __name__ == "__main__":
@@ -337,29 +411,44 @@ if __name__ == "__main__":
         help="Output CSV file",
     )
 
+    parser.add_argument(
+        "-a",
+        "--append",
+        action="store_true",
+        help="Append to existing file (with --file)",
+    )
+
+    parser.add_argument(
+        "-f",
+        "--file",
+        type=str,
+        metavar="FILE",
+        help="Existing TSV file",
+    )
+
     args = parser.parse_args()
 
-    if args.csv:
-        writer = csv.writer(sys.stdout, delimiter="\t", quoting=csv.QUOTE_NONNUMERIC)
+    writer = csv.writer(sys.stdout, delimiter="\t", quoting=csv.QUOTE_NONNUMERIC)
+    (count, append_after) = output_existing(writer, args)
 
-    count = 1
     for day in get_calendar(args):
+        if day.jdn > append_after:
+            for post in postulate(day):
 
-        for post in postulate(day):
-            if not args.csv:
-                print(header(post, args.characters))
-                print("-" * 30)
-                print(post)
-                print()
+                if not args.csv:
+                    print(header(post, args.characters))
+                    print("-" * 30)
+                    print(post)
+                    print()
 
-            if args.csv:
-                writer.writerow(
-                    (
-                        count,
-                        ha.as_gregorian(day.jdn).split()[-1],
-                        len(post),
-                        post.replace("\n", "\\n"),
+                if args.csv:
+                    writer.writerow(
+                        (
+                            count,
+                            ha.as_gregorian(day.jdn).split()[-1],
+                            len(post),
+                            escape(post),
+                        )
                     )
-                )
 
-            count += 1
+                count += 1
