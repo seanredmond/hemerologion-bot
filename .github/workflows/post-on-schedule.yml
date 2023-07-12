@@ -5,7 +5,7 @@ name: Post on Schedule
 
 on:
   schedule:
-    - cron: '7 0 * * *' 
+    - cron: '22 0 * * *' 
 permissions:
   contents: read
 
