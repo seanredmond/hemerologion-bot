@@ -183,7 +183,7 @@ message with the --test flag also requires the --bluesky and/or --mastodon flag.
             print("-" * 60)
 
         else:
-            print(f"Posting {p[0]} {p[1]}")
+            print(f"Posting #{p[0]} {p[1]}")
             for r in post_posts(p[3].replace("\\n", "\n"), args):
                 print(r)
                 time.sleep(1)
