@@ -32,6 +32,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import argparse
 import csv
 from datetime import datetime, timezone
+from mastodon import Mastodon
 import os
 import requests
 import sys
@@ -43,6 +44,8 @@ class HemerologionPostError(Exception):
 
 
 BLUESKY_BASE = "https://bsky.social/xrpc"
+MASTODON_BASE = "https://mastodon.social"
+UA = "hemerologion-post"
 
 
 def load_posts(fn):
@@ -62,11 +65,28 @@ def posts_for_day(date, posts):
     return tuple([p for p in posts if p[1] == date])
 
 
+def get_visibility(private):
+    """Return requested visibility for Mastodon."""
+    if private:
+        return "direct"
+
+    return "public"
+
+
 def do_bluesky(opts):
+    """Check whether Bluesky posting is enabled"""
     if opts.test:
         return opts.bluesky and os.environ.get("BLUESKY", False)
 
     return os.environ.get("BLUESKY", False)
+
+
+def do_mastodon(opts):
+    """Check whether Mastodon posting is enabled"""
+    if opts.test:
+        return opts.mastodon and os.environ.get("MASTODON", False)
+
+    return os.environ.get("MASTODON", False)
 
 
 def post_to_bluesky(post):
@@ -101,7 +121,7 @@ def post_to_bluesky(post):
         },
     }
 
-    headers = {"Authorization": "Bearer " + jwt}
+    headers = {"Authorization": "Bearer " + jwt, "User-Agent": UA}
 
     try:
         resp = requests.post(
@@ -113,15 +133,32 @@ def post_to_bluesky(post):
         resp.raise_for_status()
 
     except requests.exceptions.HTTPError as e:
-        raise HemerologionPostError("Failed to authenticate to Bluesky {e}")
+        raise HemerologionPostError("Failed to authenticate to Bluesky ({})".format(e))
 
     return "posted to Bluesky"
 
 
-def post_posts(post, opts):
+def post_to_mastodon(post, vis="public"):
+    mastodon = Mastodon(
+        client_id=os.environ["MASTODON_KEY"],
+        client_secret=os.environ["MASTODON_SECRET"],
+        access_token=os.environ["MASTODON_TOKEN"],
+        api_base_url=MASTODON_BASE,
+        user_agent=UA,
+    )
+
+    mastodon.status_post(post, visibility=vis, language="en")
+
+    return "Posted to Mastodon"
+
+
+def post_posts(post, opts, vis="public"):
     result = ()
     if do_bluesky(opts):
         result = result + (post_to_bluesky(post),)
+
+    if do_mastodon(opts):
+        result = result + (post_to_mastodon(post, vis),)
 
     return result
 
@@ -165,11 +202,25 @@ message with the --test flag also requires the --bluesky and/or --mastodon flag.
         help="Post test message to Bluesky (with --test)",
     )
 
+    parser.add_argument(
+        "--mastodon",
+        action="store_true",
+        default=False,
+        help="Post test message to Mastodon (with --test)",
+    )
+
+    parser.add_argument(
+        "--private",
+        action="store_true",
+        default=False,
+        help="Make post private (Mastodon, = 'direct')",
+    )
+
     args = parser.parse_args()
 
     if args.test:
         # Post test message and exit
-        print(post_posts("Test", args))
+        print(post_posts("Test", args, "direct"))
         sys.exit(0)
 
     posts = posts_for_day(args.for_date, load_posts(args.tsv))
@@ -184,6 +235,8 @@ message with the --test flag also requires the --bluesky and/or --mastodon flag.
 
         else:
             print(f"Posting #{p[0]} {p[1]}")
-            for r in post_posts(p[3].replace("\\n", "\n"), args):
+            for r in post_posts(
+                p[3].replace("\\n", "\n"), args, get_visibility(args.private)
+            ):
                 print(r)
                 time.sleep(1)
