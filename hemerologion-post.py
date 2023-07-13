@@ -1,17 +1,22 @@
 #!/usr/bin/env python
-"""
-Post hemerologion bot posts
+"""Post hemerologion bot posts
 
-Read posts from TSV file, find posts to be posted today and post them to Bluesky
+Read posts from TSV file, find posts to be posted today and post them
+to Mastodon and Bluesky
 
 This requires some environment variable to be set:
+
+    MASTODON: Must be set to some true value to enable posting
+    MASTODON_KEY: Key for Mastodon app
+    MASTODON_SECRET: Secret for Mastodon app
+    MASTODON_TOKEN: Token for Mastodon app
 
     BLUESKY: Must be set to some true value to enable posting
     BLUESKY_ID: ID of Bluesky user to post as
     BLUESKY_PASSWORD: Password for BLUESKY_ID user
 
-Heavily indebted to https://github.com/thisisparker/oldroadside for practical
-understanding of these APIs!
+Heavily indebted to https://github.com/thisisparker/oldroadside for
+practical understanding of these APIs!
 
 Copyright (C) 2023 Sean Redmond
 
@@ -49,12 +54,14 @@ UA = "hemerologion-post"
 
 
 def load_posts(fn):
+    """Load existing posts from TSV file"""
     with open(fn) as posts:
         reader = csv.reader(posts, delimiter="\t", quoting=csv.QUOTE_NONNUMERIC)
         return tuple([tuple(r) for r in reader])
 
 
 def post_date(d=None):
+    """Return datetime in year/month/day format"""
     if d:
         return d
 
@@ -62,6 +69,7 @@ def post_date(d=None):
 
 
 def posts_for_day(date, posts):
+    """Return only posts matching the given date"""
     return tuple([p for p in posts if p[1] == date])
 
 
@@ -90,6 +98,7 @@ def do_mastodon(opts):
 
 
 def post_to_bluesky(post):
+    """Post to Bluesky"""
     try:
         resp = requests.post(
             BLUESKY_BASE + "/com.atproto.server.createSession",
@@ -139,6 +148,7 @@ def post_to_bluesky(post):
 
 
 def post_to_mastodon(post, vis="public"):
+    """Post to Mastodon"""
     mastodon = Mastodon(
         client_id=os.environ["MASTODON_KEY"],
         client_secret=os.environ["MASTODON_SECRET"],
@@ -153,6 +163,7 @@ def post_to_mastodon(post, vis="public"):
 
 
 def post_posts(post, opts, vis="public"):
+    """Post all the given posts to Mastodon and/or Bluesky"""
     result = ()
     if do_bluesky(opts):
         result = result + (post_to_bluesky(post),)
