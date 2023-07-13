@@ -14,9 +14,10 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      CLIENT_KEY: ${{ secrets.MASTODON_KEY }}
-      CLIENT_SECRET: ${{ secrets.MASTODON_SECRET }}
-      CLIENT_TOKEN: ${{ secrets.MASTODON_TOKEN }}
+      MASTODON: ${{ vars.MASTODON }}
+      MASTODON_KEY: ${{ secrets.MASTODON_KEY }}
+      MASTODON_SECRET: ${{ secrets.MASTODON_SECRET }}
+      MASTODON_TOKEN: ${{ secrets.MASTODON_TOKEN }}
       BLUESKY: ${{ vars.BLUESKY }}
       BLUESKY_ID: ${{ secrets.BLUESKY_ID }}
       BLUESKY_PASSWORD: ${{ secrets.BLUESKY_PASSWORD }}
