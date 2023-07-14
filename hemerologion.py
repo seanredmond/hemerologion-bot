@@ -425,7 +425,7 @@ if __name__ == "__main__":
         default=True,
         help="Keep old posts (with --append,  --file) in output",
     )
-    
+
     parser.add_argument(
         "-f",
         "--file",
