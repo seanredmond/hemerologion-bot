@@ -351,7 +351,7 @@ def max_date(posts):
     return max([jdn_from_date(p[1]) for p in posts])
 
 
-def output_existing(writer, args):
+def output_existing(writer, args, after=today_jdn()):
     """Load and output existing rows if requested and necessary"""
     # Load existing post if requested
     try:
@@ -368,11 +368,12 @@ def output_existing(writer, args):
 
     # Ouput existing posts if there are any
     for post in current_posts:
-        if not args.csv:
-            print(show_post(unescape(post[3]), args.characters))
+        if args.keep_old or jdn_from_date(post[1]) >= after:
+            if not args.csv:
+                print(show_post(unescape(post[3]), args.characters))
 
-        if args.csv:
-            writer.writerow((int(post[0]), post[1], int(post[2]), post[3]))
+            if args.csv:
+                writer.writerow((int(post[0]), post[1], int(post[2]), post[3]))
 
     return (max_count(current_posts) + 1, max_date(current_posts))
 
@@ -418,6 +419,13 @@ if __name__ == "__main__":
         help="Append to existing file (with --file)",
     )
 
+    parser.add_argument(
+        "--keep-old",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Keep old posts (with --append,  --file) in output",
+    )
+    
     parser.add_argument(
         "-f",
         "--file",
