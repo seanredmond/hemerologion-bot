@@ -21,6 +21,8 @@ jobs:
       MASTODON_SECRET: ${{ secrets.MASTODON_SECRET }}
       MASTODON_TOKEN: ${{ secrets.MASTODON_TOKEN }}
       BLUESKY: 0
+      BLUESKY_ID: 0
+      BLUESKY_PASSWORD: 0
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python 3.10
