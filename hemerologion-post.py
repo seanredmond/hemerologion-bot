@@ -86,7 +86,7 @@ def do_bluesky(opts):
     if opts.test:
         return opts.bluesky and os.environ.get("BLUESKY", False)
 
-    return os.environ.get("BLUESKY", False)
+    return int(os.environ.get("BLUESKY", 0))
 
 
 def do_mastodon(opts):
