@@ -99,7 +99,7 @@ def gregorian_date(day):
 def get_count_of_days(count, year, from_jdn):
     """Return a list of days of length 'count' after day 'from_jdn'"""
 
-    cal = tuple([d for d in ha.festival_calendar(year) if d.jdn > from_jdn][0:count])
+    cal = tuple([d for d in ha.athenian_festival_calendar(year) if d.jdn > from_jdn][0:count])
     if len(cal) < count:
         return cal + get_count_of_days(count - len(cal), year + 1, from_jdn)
 
