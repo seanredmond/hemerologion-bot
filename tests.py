@@ -6,15 +6,32 @@ from collections import namedtuple
 
 Day = namedtuple("Day", ("month", "day", "month_length"))
 
+
 @pytest.fixture
 def cal_2023():
     options = argparse.Namespace(year=2023)
     return hem.get_calendar(options)
 
+
 @pytest.fixture
 def cal_2024():
     options = argparse.Namespace(year=2024)
     return hem.get_calendar(options)
+
+
+def test_get_calendar_by_year():
+    options = argparse.Namespace(year=2024)
+    cal = hem.get_calendar(options)
+    assert cal[0].doy == 1
+    assert cal[0].jdn == 2460498
+    assert cal[-1].doy == 355
+    assert cal[-1].jdn == 2460852
+
+
+def test_get_calendar_by_days():
+    options = argparse.Namespace(year=None, days=10)
+    cal = hem.get_calendar(options)
+    assert len(cal) == 10
 
 
 def test_get_single_festival_for_day():
@@ -110,22 +127,32 @@ def test_summary_of_months_second_half(cal_2023):
 
 def test_summarize_first_half(cal_2024):
     months = ha.by_months(cal_2024)
-    
+
     s = hem.summarize_first_half(months)
-    assert s == "2024/2025 will be an ordinary year of 355 days, ending on 2025-Jun-25. As an ordinary year there will be 12 months (1/2):\n\nHekatombaiṓn: Jul 06–Aug 04\nMetageitniṓn: Aug 05–Sep 03\nBoēdromiṓn: Sep 04–Oct 02\nPuanopsiṓn: Oct 03–Nov 01\nMaimaktēriṓn: Nov 02–Dec 01\nPosideiṓn: Dec 02–Dec 30\n"
-    
+    assert (
+        s
+        == "2024/2025 will be an ordinary year of 355 days, ending on 2025-Jun-25. As an ordinary year there will be 12 months (1/2):\n\nHekatombaiṓn: Jul 06–Aug 04\nMetageitniṓn: Aug 05–Sep 03\nBoēdromiṓn: Sep 04–Oct 02\nPuanopsiṓn: Oct 03–Nov 01\nMaimaktēriṓn: Nov 02–Dec 01\nPosideiṓn: Dec 02–Dec 30\n"
+    )
+
 
 def test_summarize_second_half(cal_2024):
     months = ha.by_months(cal_2024)
-    
+
     s = hem.summarize_second_half(months)
-    assert s == "Months in 2024/2025 (2/2):\n\nGamēliṓn: Dec 31–Jan 29\nAnthestēriṓn: Jan 30–Feb 28\nElaphēboliṓn: Mar 01–Mar 29\nMounukhiṓn: Mar 30–Apr 27\nThargēliṓn: Apr 28–May 27\nSkirophoriṓn: May 28–Jun 25\n"
-    
+    assert (
+        s
+        == "Months in 2024/2025 (2/2):\n\nGamēliṓn: Dec 31–Jan 29\nAnthestēriṓn: Jan 30–Feb 28\nElaphēboliṓn: Mar 01–Mar 29\nMounukhiṓn: Mar 30–Apr 27\nThargēliṓn: Apr 28–May 27\nSkirophoriṓn: May 28–Jun 25\n"
+    )
+
+
 def test_year_summary(cal_2024):
     s = hem.year_summary(cal_2024[0])
-    
+
     split_s1 = s[0].split("\n")
-    assert split_s1[0] == "2024/2025 will be an ordinary year of 355 days, ending on 2025-Jun-25. As an ordinary year there will be 12 months (1/2):"
+    assert (
+        split_s1[0]
+        == "2024/2025 will be an ordinary year of 355 days, ending on 2025-Jun-25. As an ordinary year there will be 12 months (1/2):"
+    )
     assert split_s1[1] == ""
     assert split_s1[2] == "Hekatombaiṓn: Jul 06–Aug 04"
     assert split_s1[7] == "Posideiṓn: Dec 02–Dec 30"
@@ -134,4 +161,3 @@ def test_year_summary(cal_2024):
     assert split_s2[0] == "Months in 2024/2025 (2/2):"
     assert split_s2[2] == "Gamēliṓn: Dec 31–Jan 29"
     assert split_s2[7] == "Skirophoriṓn: May 28–Jun 25"
-
