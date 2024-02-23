@@ -111,7 +111,7 @@ def get_count_of_days(count, year, from_jdn):
 def get_calendar(options):
     """Return tuple of days matching options"""
     if options.year:
-        return ha.festival_calendar(options.year)
+        return ha.athenian_festival_calendar(options.year)
 
     if options.days:
         return get_count_of_days(options.days, today_year() - 1, today_jdn())
