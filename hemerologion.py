@@ -183,26 +183,29 @@ def month_summary(day):
     )
 
 
-def year_summary(day):
-    """Format summary of year."""
+def summary_of_months(months, second_half=False):
+    summary = ""
+    for month in months[6:] if second_half else months[0:6]:
+        start = " ".join(ha.as_julian(month[0]).split()[-1].split("-")[1:3])
+        end = " ".join(ha.as_julian(month[-1]).split()[-1].split("-")[1:3])
+        summary += f"{month[0].month_name}: {start}–{end}\n"
 
-    if day.doy != 1:
-        return ()
+    return summary
 
-    months = ha.by_months(ha.festival_calendar(day.astronomical_year))
 
-    day = months[0][0]
-    year = ha.arkhon_year(day.astronomical_year).split()[-1]
-    year_type = "ordinary" if day.year_length < 380 else "intercalary"
-    month_count = 12 if day.year_length < 380 else 13
+def summarize_first_half(months):
+    """Format summary of the first six months of the year."""
+
+    day1 = months[0][0]
+    year = ha.arkhon_year(day1.astronomical_year).split()[-1]
+    year_type = "ordinary" if day1.year_length < 380 else "intercalary"
+    month_count = 12 if day1.year_length < 380 else 13
 
     if month_count != 12:
         raise ValueError("This does not yet handle intercalary years!!")
 
-    # This has to be split into two posts because it is long
-
     summary1 = (
-        f"{year} will be an {year_type} year of {day.year_length} "
+        f"{year} will be an {year_type} year of {day1.year_length} "
         f"days, ending on {ha.as_julian(months[-1][-1]).split()[-1]}. As an "
         f"{year_type} year there will be {month_count} months (1/2):\n\n"
     )
@@ -212,13 +215,32 @@ def year_summary(day):
         end = " ".join(ha.as_julian(month[-1]).split()[-1].split("-")[1:3])
         summary1 += f"{month[0].month_name}: {start}–{end}\n"
 
+    return summary1
+
+
+def summarize_second_half(months):
+    """Format summary of last six months of the year."""
+    year = ha.arkhon_year(months[0][0].astronomical_year).split()[-1]
+
     summary2 = f"Months in {year} (2/2):\n\n"
     for month in months[6:]:
         start = " ".join(ha.as_julian(month[0]).split()[-1].split("-")[1:3])
         end = " ".join(ha.as_julian(month[-1]).split()[-1].split("-")[1:3])
         summary2 += f"{month[0].month_name}: {start}–{end}\n"
 
-    return (summary1, summary2)
+    return summary2
+
+
+def year_summary(day):
+    """Format summary of year."""
+
+    if day.doy != 1:
+        return ()
+
+    months = ha.by_months(ha.athenian_festival_calendar(day.astronomical_year))
+
+    # This has to be split into two posts because it is long
+    return (summarize_first_half(months), summarize_second_half(months))
 
 
 def backwards_count(day):
