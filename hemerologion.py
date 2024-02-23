@@ -99,7 +99,9 @@ def gregorian_date(day):
 def get_count_of_days(count, year, from_jdn):
     """Return a list of days of length 'count' after day 'from_jdn'"""
 
-    cal = tuple([d for d in ha.athenian_festival_calendar(year) if d.jdn > from_jdn][0:count])
+    cal = tuple(
+        [d for d in ha.athenian_festival_calendar(year) if d.jdn > from_jdn][0:count]
+    )
     if len(cal) < count:
         return cal + get_count_of_days(count - len(cal), year + 1, from_jdn)
 
@@ -199,9 +201,11 @@ def year_summary(day):
 
     # This has to be split into two posts because it is long
 
-    summary1 = f"{year} will be an {year_type} year of {day.year_length} "
-    "days, ending on {ha.as_julian(months[-1][-1]).split()[-1]}. As an "
-    "{year_type} year there will be {month_count} months (1/2):\n\n"
+    summary1 = (
+        f"{year} will be an {year_type} year of {day.year_length} "
+        f"days, ending on {ha.as_julian(months[-1][-1]).split()[-1]}. As an "
+        f"{year_type} year there will be {month_count} months (1/2):\n\n"
+    )
 
     for month in months[0:6]:
         start = " ".join(ha.as_julian(month[0]).split()[-1].split("-")[1:3])
