@@ -124,12 +124,19 @@ def despan(name, span):
     dates = [int(d[0]) for d in span]
     return (min(dates), f"{min(dates)}–{max(dates)}: {name[0]} ({name[1]})")
 
+def festival_name(name, greek):
+    """Format the name of a festival, with or without Greek version"""
+    if greek:
+        return f"{name} ({greek})"
+
+    return name
+
 
 def single_day_festivals(day):
     """Format summaries of single-day festivals"""
     return tuple(
         [
-            (d[1], f"{int(d[1])}: {d[4]} ({d[5]})")
+            (d[1], f"{int(d[1])}: {festival_name(d[4], d[5])}")
             for d in FEST
             if d[0] == day.month and d[-1] == 1
         ]
