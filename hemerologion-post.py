@@ -42,6 +42,7 @@ import os
 import requests
 import sys
 import time
+#from atproto import Client, client_utils
 
 
 class HemerologionPostError(Exception):
@@ -83,22 +84,33 @@ def get_visibility(private):
 
 def do_bluesky(opts):
     """Check whether Bluesky posting is enabled"""
-    if opts.test:
-        return opts.bluesky and os.environ.get("BLUESKY", False)
+    # if opts.test:
+    #     return opts.bluesky and os.environ.get("BLUESKY", False)
 
     return int(os.environ.get("BLUESKY", 0))
 
 
 def do_mastodon(opts):
     """Check whether Mastodon posting is enabled"""
-    if opts.test:
-        return opts.mastodon and os.environ.get("MASTODON", False)
+    # if opts.test:
+    #     return opts.mastodon and os.environ.get("MASTODON", False)
 
-    return os.environ.get("MASTODON", False)
+    return int(os.environ.get("MASTODON", 0))
 
 
 def post_to_bluesky(post):
     """Post to Bluesky"""
+
+    # client = Client()
+    # profile = client.login(os.environ["BLUESKY_ID"], os.environ["BLUESKY_PASSWORD"])
+    # #print('Welcome,', profile.display_name)
+
+    
+    # text = client_utils.TextBuilder().text(post[3]) #.link('Python SDK', 'https://atproto.blue')
+
+    #print(text)
+    #bsky_post = client.send_post(text)
+
     try:
         resp = requests.post(
             BLUESKY_BASE + "/com.atproto.server.createSession",
@@ -139,10 +151,11 @@ def post_to_bluesky(post):
             headers=headers,
         )
 
+        print(resp)
         resp.raise_for_status()
 
     except requests.exceptions.HTTPError as e:
-        raise HemerologionPostError("Failed to authenticate to Bluesky ({})".format(e))
+        raise HemerologionPostError("Failed to post to Bluesky ({})".format(e))
 
     return "posted to Bluesky"
 
@@ -162,16 +175,26 @@ def post_to_mastodon(post, vis="public"):
     return "Posted to Mastodon"
 
 
-def post_posts(post, opts, vis="public"):
-    """Post all the given posts to Mastodon and/or Bluesky"""
-    result = ()
-    if do_bluesky(opts):
-        result = result + (post_to_bluesky(post),)
+def show_posts(p, args):
+    print("-" * 60)
+    print(f"#{int(p[0])} {p[1]} ({int(p[2])} characters)")
+    print("=" * 35)
+    print(p[3].replace("\\n", "\n"))
+    print("-" * 60)
 
-    if do_mastodon(opts):
-        result = result + (post_to_mastodon(post, vis),)
 
-    return result
+def post_bluesky(post, args):
+    if not do_bluesky(args):
+        return
+
+    return post_to_bluesky(post[3].replace("\\n", "\n"))
+    
+
+def post_mastodon(post, args):
+    if not do_mastodon(args):
+        return
+
+    return post_to_mastodon(post[3].replace("\\n", "\n"))
 
 
 if __name__ == "__main__":
@@ -180,10 +203,24 @@ if __name__ == "__main__":
         description="Post Greek calendar bot posts",
         epilog="""
 Posting to Bluesky and Mastodon requires the BLUESKY and MASTODON environment
-variable, respectively, set to true values (i.e., MASTODON=1). Posting a test
-message with the --test flag also requires the --bluesky and/or --mastodon flag.
+variable, respectively, set to true values (i.e., MASTODON=1).
 """,
     )
+
+    subparsers = parser.add_subparsers(dest="command")
+
+    show_parser = subparsers.add_parser("show", help="Show what would be posted")
+    show_parser.set_defaults(func=show_posts)
+
+    post_parser = subparsers.add_parser("post", help="Post")
+
+    post_subparsers = post_parser.add_subparsers(dest="platform")
+
+    
+    bluesky_parser = post_subparsers.add_parser("bluesky", help="Post to Bluesky")
+    bluesky_parser.set_defaults(func=post_bluesky)
+    mastodon_parser = post_subparsers.add_parser("mastodon", help="Post to Mastodon") 
+    mastodon_parser.set_defaults(func=post_mastodon)
 
     parser.add_argument("tsv", metavar="FILE", type=str, help="TSV file for posts")
 
@@ -197,30 +234,6 @@ message with the --test flag also requires the --bluesky and/or --mastodon flag.
     )
 
     parser.add_argument(
-        "-s", "--show", action="store_true", help="Only show what would be posted"
-    )
-
-    parser.add_argument(
-        "--test",
-        action="store_true",
-        help="Post test message (with --bluesky and/or --mastodon)",
-    )
-
-    parser.add_argument(
-        "--bluesky",
-        action="store_true",
-        default=False,
-        help="Post test message to Bluesky (with --test)",
-    )
-
-    parser.add_argument(
-        "--mastodon",
-        action="store_true",
-        default=False,
-        help="Post test message to Mastodon (with --test)",
-    )
-
-    parser.add_argument(
         "--private",
         action="store_true",
         default=False,
@@ -229,25 +242,8 @@ message with the --test flag also requires the --bluesky and/or --mastodon flag.
 
     args = parser.parse_args()
 
-    if args.test:
-        # Post test message and exit
-        print(post_posts("Test", args, "direct"))
-        sys.exit(0)
-
     posts = posts_for_day(args.for_date, load_posts(args.tsv))
 
     for p in posts:
-        if args.show:
-            print("-" * 60)
-            print(f"#{int(p[0])} {p[1]} ({int(p[2])} characters)")
-            print("=" * 35)
-            print(p[3].replace("\\n", "\n"))
-            print("-" * 60)
+        args.func(p, args)
 
-        else:
-            print(f"Posting #{p[0]} {p[1]}")
-            for r in post_posts(
-                p[3].replace("\\n", "\n"), args, get_visibility(args.private)
-            ):
-                print(r)
-                time.sleep(1)
