@@ -1,7 +1,7 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-name: Manual Post (Mastodon)
+name: Post to Mastodon
 
 on:
   workflow_dispatch:
@@ -20,9 +20,6 @@ jobs:
       MASTODON_KEY: ${{ secrets.MASTODON_KEY }}
       MASTODON_SECRET: ${{ secrets.MASTODON_SECRET }}
       MASTODON_TOKEN: ${{ secrets.MASTODON_TOKEN }}
-      BLUESKY: 0
-      BLUESKY_ID: 0
-      BLUESKY_PASSWORD: 0
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python 3.10
@@ -42,4 +39,4 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Post Status
       run: |
-        python hemerologion-post.py posts.tsv
+        python hemerologion-post.py post mastodon posts.tsv
