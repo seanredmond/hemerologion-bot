@@ -50,7 +50,7 @@ class HemerologionPostError(Exception):
 
 
 BLUESKY_BASE = "https://bsky.social/xrpc"
-MASTODON_BASE = "https://botsin.space"
+MASTODON_BASE = "https://mas.to"
 UA = "hemerologion-post"
 
 
