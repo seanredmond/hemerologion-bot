@@ -199,6 +199,12 @@ def summary_of_months(months, second_half=False):
 
     return summary
 
+def first_of_2nd_half(months):
+    if len(months) > 12:
+        return 6
+
+    return 6
+
 
 def summarize_first_half(months):
     """Format summary of the first six months of the year."""
@@ -207,9 +213,6 @@ def summarize_first_half(months):
     year = ha.arkhon_year(day1.astronomical_year).split()[-1]
     year_type = "ordinary" if day1.year_length < 380 else "intercalary"
     month_count = 12 if day1.year_length < 380 else 13
-
-    if month_count != 12:
-        raise ValueError("This does not yet handle intercalary years!!")
 
     summary1 = (
         f"{year} will be an {year_type} year of {day1.year_length} "
@@ -230,7 +233,7 @@ def summarize_second_half(months):
     year = ha.arkhon_year(months[0][0].astronomical_year).split()[-1]
 
     summary2 = f"Months in {year} (2/2):\n\n"
-    for month in months[6:]:
+    for month in months[first_of_2nd_half(months):]:
         start = " ".join(ha.as_julian(month[0]).split()[-1].split("-")[1:3])
         end = " ".join(ha.as_julian(month[-1]).split()[-1].split("-")[1:3])
         summary2 += f"{month[0].month_name}: {start}–{end}\n"
