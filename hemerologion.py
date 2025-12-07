@@ -321,6 +321,14 @@ def greek_day_name(day):
 
 def greek_date(day):
     """Return date in Greek"""
+    # Sort of brute forcing this solution for intercalary months,
+    # assuming we're just using interalary Posideion
+    if day.month == ha.Months.INT:
+        print(day)
+        month_gen = to_genitive(ha.month_name(ha.AthenianMonths.POS, name_as=ha.MonthNameOptions.GREEK))
+        day_gk = greek_day_name(day)
+        return f"{day_gk} {month_gen} ὑστέρου"
+        
     month_gen = to_genitive(ha.month_name(day.month, name_as=ha.MonthNameOptions.GREEK))
     day_gk = greek_day_name(day)
     return f"{day_gk} {month_gen}"

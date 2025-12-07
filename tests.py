@@ -161,3 +161,13 @@ def test_year_summary(cal_2024):
     assert split_s2[0] == "Months in 2024/2025 (2/2):"
     assert split_s2[2] == "Gamēliṓn: Dec 31–Jan 29"
     assert split_s2[7] == "Skirophoriṓn: May 28–Jun 25"
+
+
+def test_greek_date():
+    d = ha.FestivalDay(2461030, 'Posideiṓn', 6, ha.AthenianMonths.POS, 30, 30, 178, ' CE 2025/2026', 384, 2025)
+    assert hem.greek_date(d) == "ἕνῃ καὶ νέᾳ Ποσιδειῶνος"
+
+
+def test_greek_date_intercalary():
+    d = ha.FestivalDay(2461031, 'Posideiṓn hústeros', 7, ha.Months.INT, 29, 1, 179, ' CE 2025/2026', 384, 2025)
+    assert hem.greek_date(d) == "νουμηνίᾳ Ποσιδειῶνος ὑστέρου"
