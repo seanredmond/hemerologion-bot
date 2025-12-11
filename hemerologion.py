@@ -192,7 +192,7 @@ def month_summary(day):
 
 def intercalary_month_summary(day):
     if day.day == 1 and day.month is ha.Months.INT:
-        return(f"This {day.month_name} or “Second Posideiṓn” is an intercalary month, added every 2 or three years to keep the shorter lunar year aligned to the solar year. Athenians commonly doubled Posideiṓn but could double other months as well.",)
+        return(f"This {day.month_name} or “Second Posideiṓn” is an intercalary month, added every 2 or 3 years to keep the shorter lunar year aligned to the solar year. Athenians commonly doubled Posideiṓn but could double other months as well.",)
 
     return ()
 
@@ -331,7 +331,6 @@ def greek_date(day):
     # Sort of brute forcing this solution for intercalary months,
     # assuming we're just using interalary Posideion
     if day.month == ha.Months.INT:
-        print(day)
         month_gen = to_genitive(ha.month_name(ha.AthenianMonths.POS, name_as=ha.MonthNameOptions.GREEK))
         day_gk = greek_day_name(day)
         return f"{day_gk} {month_gen} ὑστέρου"
