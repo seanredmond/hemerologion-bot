@@ -190,6 +190,13 @@ def month_summary(day):
     )
 
 
+def intercalary_month_summary(day):
+    if day.day == 1 and day.month is ha.Months.INT:
+        return(f"This {day.month_name} or “Second Posideiṓn” is an intercalary month, added every 2 or three years to keep the shorter lunar year aligned to the solar year. Athenians commonly doubled Posideiṓn but could double other months as well.",)
+
+    return ()
+
+
 def summary_of_months(months, second_half=False):
     summary = ""
     for month in months[6:] if second_half else months[0:6]:
@@ -343,6 +350,7 @@ def postulate(day):
         (post,)
         + year_summary(day)
         + month_summary(day)
+        + intercalary_month_summary(day) 
         + festival_summary(day)
         + festivals(day)
     )
